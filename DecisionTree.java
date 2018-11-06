@@ -28,7 +28,7 @@ class LeafNode extends Node {
     a = null;
     b = null;
 
-    label = new double[labels.rows()];
+    label = new double[1];
     double mode;
     if(labels.valueCount(0) == 0)
       mode = labels.columnMean(0);
@@ -71,18 +71,23 @@ class DecisionTree extends SupervisedLearner {
   Node buildTree(Matrix features, Matrix labels) {
     if(features.rows() != labels.rows()) throw new RuntimeException("Rows unequal");
 
-    int col = pickDividingColumn(features, labels);
-    double pivot = pickPivot(features, labels, col);
+    // copies the meta-data
+    Matrix featA = new Matrix();
+    Matrix labelA = new Matrix();
+    Matrix featB = new Matrix();
+    Matrix labelB = new Matrix();
 
-    Matrix featA = null, featB = null, labelA = null, labelB = null;
-    for(int patience = 1; patience >= 0; --patience) {
+    featA.copyMetaData(features);
+    featB.copyMetaData(features);
+    labelA.copyMetaData(labels);
+    labelB.copyMetaData(labels);
+
+    int col = 0;
+    double pivot = 0.0;
+    for(int patience = 20; patience >= 0; --patience) {
+      col = pickDividingColumn(features, labels);
+      pivot = pickPivot(features, labels, col);
       int vals = features.valueCount(col);
-
-      // copies the meta-data
-      featA = new Matrix(features);
-      featB = new Matrix(features);
-      labelA = new Matrix(labels);
-      labelB = new Matrix(labels);
 
       for(int i = 0; i < features.rows(); ++i) {
 
@@ -110,6 +115,8 @@ class DecisionTree extends SupervisedLearner {
         }
       }
 
+      //System.out.println(featA.rows() + " " + featB.rows() + " " + labelA.rows() + " " + labelB.rows());
+
       // we did succeed at dividing
       if(featA.rows() != 0 || featB.rows() != 0) {
         // We assume that the leaf node consutctor compues the mean of all the cont. values in the labels
@@ -117,8 +124,6 @@ class DecisionTree extends SupervisedLearner {
         break;
       }
     }
-
-    System.out.println(col);
 
     // We failed to divide the data
     if(featA.rows() == 0 || featB.rows() == 0) {
@@ -148,7 +153,9 @@ class DecisionTree extends SupervisedLearner {
           n = n.b;
       } else {
         // When we hit the leaf node, copy the labels into out
+
         Vec.copy(out, n.label);
+        break;
       }
     }
   }

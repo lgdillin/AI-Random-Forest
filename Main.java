@@ -32,7 +32,7 @@ class Main
 
 	public static void testLearner(SupervisedLearner learner)
 	{
-		test(learner, "debug");
+		//test(learner, "debug");
 		test(learner, "hep");
 		test(learner, "vow");
 		test(learner, "soy");
