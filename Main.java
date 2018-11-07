@@ -5,10 +5,8 @@
 
 import java.util.Random;
 
-class Main
-{
-	static void test(SupervisedLearner learner, String challenge)
-	{
+class Main {
+	static void test(SupervisedLearner learner, String challenge) {
 		// Load the training data
 		String fn = "data/" + challenge;
 		Matrix trainFeatures = new Matrix();
@@ -30,20 +28,18 @@ class Main
 		System.out.println("Misclassifications by " + learner.name() + " at " + challenge + " = " + Integer.toString(misclassifications) + "/" + Integer.toString(testFeatures.rows()));
 	}
 
-	public static void testLearner(SupervisedLearner learner)
-	{
-		//test(learner, "debug");
+	public static void testLearner(SupervisedLearner learner) {
+		test(learner, "debug");
 		test(learner, "hep");
 		test(learner, "vow");
 		test(learner, "soy");
 	}
 
-	public static void main(String[] args)
-	{
-		Random r = new Random(123456);
+	public static void main(String[] args) {
+		Random r = new Random();
 
-		testLearner(new BaselineLearner());
-		testLearner(new DecisionTree(r));
-		//testLearner(new RandomForest(50));
+		// testLearner(new BaselineLearner());
+		// testLearner(new DecisionTree(r));
+		testLearner(new RandomForest(r, 30));
 	}
 }

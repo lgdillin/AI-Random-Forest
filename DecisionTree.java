@@ -3,6 +3,7 @@ import java.util.Random;
 
 abstract class Node {
   int attribute; // Which attribute to divide on
+  int attributeType;
   double pivot; // Which value to divide on
   double[] label;
   Node a, b;
@@ -11,11 +12,12 @@ abstract class Node {
 }
 
 class InteriorNode extends Node {
-  InteriorNode(Node a, Node b, int col, double pivot) {
+  InteriorNode(Node a, Node b, int col, int vals, double pivot) {
     label = null;
     this.a = a;
     this.b = b;
     attribute = col;
+    attributeType = vals;
     this.pivot = pivot;
   }
 
@@ -29,11 +31,14 @@ class LeafNode extends Node {
     b = null;
 
     label = new double[1];
-    double mode;
-    if(labels.valueCount(0) == 0)
-      mode = labels.columnMean(0);
-    else
-      mode = labels.mostCommonValue(0);
+    // double mode;
+    // if(labels.valueCount(0) == 0)
+    //   mode = labels.columnMean(0);
+    // else
+    //   mode = labels.mostCommonValue(0);
+
+    double mode = labels.row(0)[0];
+
     Vec.setAll(label, mode);
   }
 
@@ -56,13 +61,10 @@ class DecisionTree extends SupervisedLearner {
     // we should do entropy reduction eventually
 
     int col = rand.nextInt(features.cols());
-    //int row = rand.nextInt(features.rows());
-    //int pivot = features.row(row)[col];
     return col;
   }
 
   double pickPivot(Matrix features, Matrix labels, int col) {
-    //int col = rand.nextInt(features.cols());
     int row = rand.nextInt(features.rows());
     double pivot = features.row(row)[col];
     return pivot;
@@ -77,17 +79,19 @@ class DecisionTree extends SupervisedLearner {
     Matrix featB = new Matrix();
     Matrix labelB = new Matrix();
 
-    featA.copyMetaData(features);
-    featB.copyMetaData(features);
-    labelA.copyMetaData(labels);
-    labelB.copyMetaData(labels);
-
     int col = 0;
-    double pivot = 0.0;
-    for(int patience = 20; patience >= 0; --patience) {
+    double pivot = 0;
+    int vals = 0;
+    for(int attempts = 0; attempts < 10; ++attempts) {
+      // System.out.println(features.rows());
       col = pickDividingColumn(features, labels);
       pivot = pickPivot(features, labels, col);
-      int vals = features.valueCount(col);
+      vals = features.valueCount(col);
+
+      featA.copyMetaData(features);
+      featB.copyMetaData(features);
+      labelA.copyMetaData(labels);
+      labelB.copyMetaData(labels);
 
       for(int i = 0; i < features.rows(); ++i) {
 
@@ -96,45 +100,43 @@ class DecisionTree extends SupervisedLearner {
 
           // Decide if the data is greater than or less than pivot
           if(features.row(i)[col] < pivot) {
-            featA.takeRow(features.removeRow(i));
-            labelA.takeRow(labels.removeRow(i));
+            Vec.copy(featA.newRow(), features.row(i));
+            Vec.copy(labelA.newRow(), labels.row(i));
           } else {
-            featB.takeRow(features.removeRow(i));
-            labelB.takeRow(labels.removeRow(i));
+            Vec.copy(featB.newRow(), features.row(i));
+            Vec.copy(labelB.newRow(), labels.row(i));
           }
 
         // Data is non-continuous (categorical)
         } else {
           if(features.row(i)[col] == pivot) {
-            featA.takeRow(features.removeRow(i));
-            labelA.takeRow(labels.removeRow(i));
+            Vec.copy(featA.newRow(), features.row(i));
+            Vec.copy(labelA.newRow(), labels.row(i));
           } else {
-            featB.takeRow(features.removeRow(i));
-            labelB.takeRow(labels.removeRow(i));
+            Vec.copy(featB.newRow(), features.row(i));
+            Vec.copy(labelB.newRow(), labels.row(i));
           }
         }
       }
 
-      //System.out.println(featA.rows() + " " + featB.rows() + " " + labelA.rows() + " " + labelB.rows());
-
       // we did succeed at dividing
-      if(featA.rows() != 0 || featB.rows() != 0) {
-        // We assume that the leaf node consutctor compues the mean of all the cont. values in the labels
-        // and the mode of the categorical variables
+      if(featA.rows() > 0 && featB.rows() > 0) {
         break;
       }
     }
 
     // We failed to divide the data
-    if(featA.rows() == 0 || featB.rows() == 0) {
-      // We assume that the leaf node consutctor compues the mean of all the cont. values in the labels
-      // and the mode of the categorical variables
-      return new LeafNode(labels);
+    if(featA.rows() == 0) {
+      return new LeafNode(labelB);
+    }
+
+    if(featB.rows() == 0) {
+      return new LeafNode(labelA);
     }
 
     Node a = buildTree(featA, labelA);
     Node b = buildTree(featB, labelB);
-    return new InteriorNode(a, b, col, pivot);
+    return new InteriorNode(a, b, col, vals, pivot);
   }
 
   void train(Matrix features, Matrix labels) {
@@ -147,16 +149,24 @@ class DecisionTree extends SupervisedLearner {
 
     while(true) {
       if(!n.isLeaf()) {
-        if(in[n.attribute] < n.pivot)
-          n = n.a;
-        else
-          n = n.b;
+        if(n.attributeType == 0) {
+          if(in[n.attribute] < n.pivot)
+            n = n.a;
+          else
+            n = n.b;
+        } else {
+          if(in[n.attribute] == n.pivot)
+            n = n.a;
+          else
+            n = n.b;
+        }
       } else {
         // When we hit the leaf node, copy the labels into out
-
         Vec.copy(out, n.label);
         break;
       }
+
+
     }
   }
 }
