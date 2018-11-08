@@ -29,7 +29,7 @@ class Main {
 	}
 
 	public static void testLearner(SupervisedLearner learner) {
-		test(learner, "debug");
+		//test(learner, "debug");
 		test(learner, "hep");
 		test(learner, "vow");
 		test(learner, "soy");
@@ -38,8 +38,8 @@ class Main {
 	public static void main(String[] args) {
 		Random r = new Random();
 
-		// testLearner(new BaselineLearner());
-		// testLearner(new DecisionTree(r));
+		testLearner(new BaselineLearner());
+		testLearner(new DecisionTree(r));
 		testLearner(new RandomForest(r, 30));
 	}
 }

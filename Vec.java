@@ -70,7 +70,8 @@ public class Vec
 	public static void copy(double[] dest, double[] src)
 	{
 		if(dest.length != src.length)
-			throw new IllegalArgumentException("mismatching sizes");
+			throw new IllegalArgumentException(
+				"dest: " + dest.length + " != " + "src: " + src.length);
 		for(int i = 0; i < src.length; i++)
 		{
 			dest[i] = src[i];

@@ -49,12 +49,20 @@ class RandomForest extends SupervisedLearner {
   }
 
   void predict(double[] in, double[] out) {
-    double[][] votes = new double[numTrees];
+    Matrix votes = new Matrix(numTrees, 1);
 
+    double[] dtPrediction = new double[1];
     for(int i = 0; i < numTrees; ++i) {
       DecisionTree dt = trees.get(i);
+      dt.predict(in, dtPrediction);
 
-      votes[i] = dt.predict(in)
+      Vec.copy(votes.row(i), dtPrediction);
+    }
+
+    if(labelType == 0) {
+      Vec.setAll(out, votes.columnMean(0));
+    } else {
+      Vec.setAll(out, votes.mostCommonValue(0));
     }
   }
 }
